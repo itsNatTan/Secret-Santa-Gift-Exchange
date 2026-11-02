@@ -30,4 +30,6 @@ export async function POST(){
  }catch(e:any){return NextResponse.json({error:e.message||"Draw failed."},{status:500});}
 }
 function escapeHtml(s:string){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]!));}
-function escapeAttr(s:string){return /^https?:\\/\\//i.test(s)?s:"#";}
+function escapeAttr(s: string) {
+  return /^https?:\/\//i.test(s) ? s : "#";
+}
