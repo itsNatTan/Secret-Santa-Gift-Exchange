@@ -32,6 +32,6 @@ export default function EventForms() {
       <div className="notice"><strong>Save your private admin code now</strong><p>This code is shown only once. Keep it safe; anyone with it can manage your exchange.</p><code className="secret">{created.adminCode}</code></div>
       <p><button className="secondary" onClick={downloadCodes}>Download my codes</button></p>
       <Link className="button" href="/admin">Open admin dashboard</Link>
-    </section> : <form className="card" onSubmit={create}><h2>Create an exchange</h2><label htmlFor="event-name">Event name</label><input id="event-name" name="name" required maxLength={100} placeholder="e.g. NSCC Christmas 2026"/><p className="small">You'll receive a join code for participants and a private admin code to keep.</p><button disabled={busy}>{busy ? "Creating…" : "Create event"}</button>{error && <p role="alert" className="error">{error}</p>}</form>}
+    </section> : <form className="card" onSubmit={create}><h2>Create an exchange</h2><label htmlFor="event-name">Event name</label><input id="event-name" name="name" required maxLength={100}/><p className="small">You'll receive a join code for participants and a private admin code to keep.</p><button disabled={busy}>{busy ? "Creating…" : "Create event"}</button>{error && <p role="alert" className="error">{error}</p>}</form>}
   </>;
 }
