@@ -19,3 +19,13 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .error { color: #a32121; } .success { color: #17623a; }
 .row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 @media(max-width:600px) { main { margin: 20px auto; } .grid,.checks { grid-template-columns: 1fr; } h1 { font-size: 27px; } }
+
+form > button { margin-top: 16px; }
+.secret { display: block; overflow-wrap: anywhere; user-select: all; }
+.notice p { color: inherit; }
+.participant { border-top: 1px solid #e5e7eb; padding: 14px 0; overflow-wrap: anywhere; }
+.participant summary { cursor: pointer; }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+.row { flex-wrap: wrap; }
+a { color: #174b75; }
+.button { color: white; }

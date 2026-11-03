@@ -1,35 +1,26 @@
-import {NextResponse} from "next/server";
-import {cookies} from "next/headers";
-import {db,isAdminCookie,getSettings,sendEmail} from "@/lib/server";
-import {makeSecretSanta} from "@/lib/matching";
-export async function POST(){
- const c=await cookies();if(!isAdminCookie(c.get("nscc_admin")?.value))return NextResponse.json({error:"Not authorised."},{status:401});
- try{
-  const s=await getSettings();
-  if(s.assignments_generated)return NextResponse.json({error:"Assignments have already been generated."},{status:409});
-  const {data:people,error}=await db.from("participants").select("*");
-  if(error)throw error;
-  if(!people||people.length<3)return NextResponse.json({error:"At least 3 participants are required."},{status:400});
-  const assignments=makeSecretSanta(people.map(p=>p.id));
-  const {error:delError}=await db.from("assignments").delete().neq("id","00000000-0000-0000-0000-000000000000");
-  if(delError)throw delError;
-  const {error:insertError}=await db.from("assignments").insert(assignments);
-  if(insertError)throw insertError;
-  // Mark as generated before sending mail to prevent a second draw if an email fails.
-  const {error:settingsError}=await db.from("event_settings").update({assignments_generated:true,registration_open:false,updated_at:new Date().toISOString()}).eq("id",1);
-  if(settingsError)throw settingsError;
-  const byId=new Map(people.map(p=>[p.id,p]));
-  const outcomes=await Promise.allSettled(assignments.map(async a=>{
-   const giver=byId.get(a.giver_id)!,recipient=byId.get(a.recipient_id)!;
-   const wishlist=(recipient.wishlist_links||[]).map((u:string)=>`<li><a href="${escapeAttr(u)}">${escapeHtml(u)}</a></li>`).join("");
-   const html=`<p>Hi ${escapeHtml(giver.name)},</p><p>Your NSCC Gift Exchange recipient is:</p><h2>${escapeHtml(recipient.name)}</h2><p><strong>Gift categories:</strong> ${escapeHtml((recipient.categories||[]).join(", ")||"No preference provided")}</p><p><strong>Things they like:</strong> ${escapeHtml(recipient.likes||"Not specified")}</p><p><strong>Prefer not to receive:</strong> ${escapeHtml(recipient.dislikes||"Not specified")}</p><p><strong>Wishlist:</strong></p><ul>${wishlist||"<li>No links provided</li>"}</ul><p>Suggested budget: ${escapeHtml(s.gift_budget||"To be confirmed")}<br/>Exchange date: ${escapeHtml(s.exchange_date||"To be confirmed")}</p><p>Please keep your assignment secret. Happy gifting!</p>`;
-   await sendEmail(giver.email,"Your NSCC Gift Exchange assignment",html);
-  }));
-  const failed=outcomes.filter(x=>x.status==="rejected").length;
-  return NextResponse.json({message:failed?`Draw completed, but ${failed} assignment email(s) failed. Do not redraw; check Resend logs and send those emails manually.`:"Assignments generated and all emails sent!"});
- }catch(e:any){return NextResponse.json({error:e.message||"Draw failed."},{status:500});}
-}
-function escapeHtml(s:string){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]!));}
-function escapeAttr(s: string) {
-  return /^https?:\/\//i.test(s) ? s : "#";
+import { NextResponse } from "next/server";
+import { database, currentAdminEvent } from "@/lib/server";
+import { makeSecretSanta } from "@/lib/matching";
+import { deliverAssignments } from "@/lib/assignment-email";
+export const maxDuration = 60;
+export async function POST() {
+  const id = await currentAdminEvent();
+  if (!id) return NextResponse.json({ error: "Not authorised." }, { status: 401 });
+  try {
+    const { data: people, error } = await database().from("participants").select("id").eq("event_id", id);
+    if (error) throw error;
+    if (!people || people.length < 3) return NextResponse.json({ error: "At least 3 participants are required." }, { status: 400 });
+    const pairs = makeSecretSanta(people.map(p => p.id));
+    // The database locks this event and commits assignments + closure together.
+    const { error: drawError } = await database().rpc("commit_draw", { target_event: id, pairs });
+    if (drawError) return NextResponse.json({ error: "Draw could not be saved. It may already exist or the participant list changed. Refresh and try again." }, { status: 409 });
+    try { return NextResponse.json({ message: `Draw saved. ${await deliverAssignments(id)}` }); }
+    catch (error) {
+      console.error("Draw email delivery failed", error);
+      return NextResponse.json({ message: "Draw saved. Email delivery could not complete; use Send pending emails to retry." });
+    }
+  } catch (error) {
+    console.error("Draw failed", error);
+    return NextResponse.json({ error: "Unable to generate the draw." }, { status: 500 });
+  }
 }
