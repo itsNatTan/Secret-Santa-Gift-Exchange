@@ -3,6 +3,7 @@ import nodemailer from "nodemailer";
 import { adminEventId } from "./security";
 export { hashToken, newToken, newJoinCode, normalizeCode, safeEqual, adminCookieValue, adminEventId } from "./security";
 import { cookies } from "next/headers";
+export { siteUrl } from "./site-url";
 
 export function database() {
   return createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -30,7 +31,3 @@ export async function getSettings(eventId: string): Promise<Exchange> {
 }
 export function deadlinePassed(deadline: string | null) { return !!deadline && Date.now() >= new Date(deadline).getTime(); }
 export function escapeHtml(s: string) { return s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!)); }
-export function siteUrl() {
-  if (!process.env.NEXT_PUBLIC_SITE_URL) throw new Error("NEXT_PUBLIC_SITE_URL is not configured.");
-  return new URL(process.env.NEXT_PUBLIC_SITE_URL).origin;
-}

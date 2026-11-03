@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     if (!s.registration_open || s.assignments_generated || deadlinePassed(s.registration_deadline)) return NextResponse.json({ error: "Registration is closed." }, { status: 403 });
     const details = participantDetails(b), email = String(b.email || "").trim().toLowerCase();
     if (!details.name || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return NextResponse.json({ error: "Please provide a valid name and email." }, { status: 400 });
-    const token = newToken(), editUrl = `${siteUrl()}/edit?token=${token}`;
+    const token = newToken(), editUrl = `${siteUrl(req.url)}/edit?token=${token}`;
     const { error } = await database().from("participants").insert({ ...details, email, event_id: s.id, edit_token_hash: hashToken(token) });
     if (error?.code === "23505") return NextResponse.json({ error: "This email is already registered for this event. Use your existing edit link or contact the organiser." }, { status: 409 });
     if (error?.message.includes("Registration is closed")) return NextResponse.json({ error: "Registration is closed." }, { status: 403 });

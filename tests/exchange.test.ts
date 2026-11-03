@@ -4,6 +4,14 @@ import { createHmac } from "node:crypto";
 import { makeSecretSanta } from "../lib/matching.ts";
 import { adminCookieValue, adminEventId, hashToken, newToken, normalizeCode } from "../lib/security.ts";
 import { participantDetails } from "../lib/participant.ts";
+import { siteUrl } from "../lib/site-url.ts";
+
+test("registration links use the request origin when the site URL is unset", () => {
+  assert.equal(siteUrl("https://exchange.vercel.app/api/register", ""), "https://exchange.vercel.app");
+  assert.equal(siteUrl("http://localhost:3000/api/register", "   "), "http://localhost:3000");
+  assert.equal(siteUrl("https://preview.vercel.app/api/register", "https://exchange.example.com/"), "https://exchange.example.com");
+  assert.throws(() => siteUrl("https://exchange.vercel.app/api/register", "javascript:alert(1)"), /HTTP or HTTPS/);
+});
 
 test("draw assigns everyone exactly once, with no self or reciprocal assignments", () => {
   assert.throws(() => makeSecretSanta(["one", "two"]));

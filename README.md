@@ -52,7 +52,7 @@ then redeploy:
 | --- | --- |
 | `SUPABASE_URL` | Existing Supabase project URL |
 | `SUPABASE_SERVICE_ROLE_KEY` | Existing service-role key; server only |
-| `NEXT_PUBLIC_SITE_URL` | Exact app origin, e.g. `https://your-app.vercel.app` |
+| `NEXT_PUBLIC_SITE_URL` | Optional canonical app origin, e.g. `https://your-app.vercel.app`; defaults to the registration request's origin |
 | `ADMIN_SESSION_SECRET` | A long random secret used to sign eight-hour admin sessions |
 | `GOOGLE_SMTP_USER` | The Gmail address used to send every event's emails |
 | `GOOGLE_SMTP_APP_PASSWORD` | A Google app password, not your usual account password |
