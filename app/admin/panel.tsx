@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Exchange } from "@/lib/server";
-type Participant = { id: string; name: string; email: string; categories: string[]; wishlist_links: string[]; likes: string; dislikes: string };
+type Participant = { id: string; name: string; email: string; categories: string[]; likes: string; dislikes: string };
 type Dashboard = { settings: Exchange; participants: Participant[]; deliveries: { giver_id: string; emailed_at: string | null }[] };
 export default function AdminPanel() {
   const [data, setData] = useState<Dashboard | null>(null), [msg, setMsg] = useState(""), [busy, setBusy] = useState(false);
@@ -39,7 +39,7 @@ export default function AdminPanel() {
     </form>
     <p className="notice">Registration: {data.settings.registration_open ? "Open" : "Closed"} · Assignments: {data.settings.assignments_generated ? "Generated" : "Not generated"}</p>
     <h2>Participants</h2>
-    {data.participants.map(p => <details key={p.id} className="participant"><summary><strong>{p.name}</strong> · {p.email}{data.settings.assignments_generated && <span className="small"> · {data.deliveries.find(d => d.giver_id === p.id)?.emailed_at ? "Email sent" : "Email pending"}</span>}</summary><p>Categories: {p.categories.join(", ") || "None"}<br/>Likes: {p.likes || "None"}<br/>Prefer not to receive: {p.dislikes || "None"}</p><ul>{p.wishlist_links.filter(u => /^https?:\/\//i.test(u)).map((u, i) => <li key={i}><a href={u} target="_blank" rel="noreferrer">{u}</a></li>)}</ul></details>)}
+    {data.participants.map(p => <details key={p.id} className="participant"><summary><strong>{p.name}</strong> · {p.email}{data.settings.assignments_generated && <span className="small"> · {data.deliveries.find(d => d.giver_id === p.id)?.emailed_at ? "Email sent" : "Email pending"}</span>}</summary><p>Categories: {p.categories.join(", ") || "None"}<br/>Likes: {p.likes || "None"}<br/>Prefer not to receive: {p.dislikes || "None"}</p></details>)}
     <div className="actions">
       <button className="secondary" disabled={busy || !data.settings.registration_open} onClick={() => action("close")}>Close registration</button>
       <button disabled={busy || data.settings.assignments_generated || data.participants.length < 3} onClick={() => { if (confirm("Generate assignments and start sending emails? The draw cannot be undone.")) action("draw"); }}>Generate & email assignments</button>

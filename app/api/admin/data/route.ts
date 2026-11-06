@@ -5,7 +5,7 @@ export async function GET() {
   if (!id) return NextResponse.json({ error: "Not authorised." }, { status: 401 });
   try {
     const [{ data, error }, settings, deliveries] = await Promise.all([
-      database().from("participants").select("id,name,email,categories,wishlist_links,likes,dislikes,created_at").eq("event_id", id).order("created_at"),
+      database().from("participants").select("id,name,email,categories,likes,dislikes,created_at").eq("event_id", id).order("created_at"),
       getSettings(id), database().from("assignments").select("giver_id,emailed_at").eq("event_id", id)
     ]);
     if (error || deliveries.error) throw error || deliveries.error;

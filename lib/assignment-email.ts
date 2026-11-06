@@ -5,7 +5,7 @@ export async function deliverAssignments(eventId: string) {
   const db = database(), settings = await getSettings(eventId);
   const [{ data: assignments, error }, { data: people, error: peopleError }] = await Promise.all([
     db.rpc("claim_assignment_emails", { target_event: eventId }),
-    db.from("participants").select("*").eq("event_id", eventId)
+    db.from("participants").select("id,name,email,categories,likes,dislikes").eq("event_id", eventId)
   ]);
   if (error || peopleError) throw error || peopleError;
   const byId = new Map((people || []).map(p => [p.id, p]));
@@ -13,8 +13,7 @@ export async function deliverAssignments(eventId: string) {
     try {
       const giver = byId.get(a.giver_id), recipient = byId.get(a.recipient_id);
       if (!giver || !recipient) throw new Error("Participant not found.");
-      const wishlist = (recipient.wishlist_links || []).map((u: string) => /^https?:\/\//i.test(u) ? `<li><a href="${escapeHtml(u)}">${escapeHtml(u)}</a></li>` : "").join("");
-      await sendEmail(giver.email, `Your ${settings.name} assignment`, `<p>Hi ${escapeHtml(giver.name)},</p><p>Your recipient for ${escapeHtml(settings.name)} is:</p><h2>${escapeHtml(recipient.name)}</h2><p><strong>Gift categories:</strong> ${escapeHtml((recipient.categories || []).join(", ") || "No preference provided")}</p><p><strong>Things they like:</strong> ${escapeHtml(recipient.likes || "Not specified")}</p><p><strong>Prefer not to receive:</strong> ${escapeHtml(recipient.dislikes || "Not specified")}</p><p><strong>Wishlist:</strong></p><ul>${wishlist || "<li>No links provided</li>"}</ul><p>Suggested budget: ${escapeHtml(settings.gift_budget || "To be confirmed")}<br/>Exchange date: ${escapeHtml(settings.exchange_date || "To be confirmed")}</p><p>Please keep your assignment secret. Happy gifting!</p>`);
+      await sendEmail(giver.email, `Your ${settings.name} assignment`, `<p>Hi ${escapeHtml(giver.name)},</p><p>Your recipient for ${escapeHtml(settings.name)} is:</p><h2>${escapeHtml(recipient.name)}</h2><p><strong>Gift categories:</strong> ${escapeHtml((recipient.categories || []).join(", ") || "No preference provided")}</p><p><strong>Things they like:</strong> ${escapeHtml(recipient.likes || "Not specified")}</p><p><strong>Prefer not to receive:</strong> ${escapeHtml(recipient.dislikes || "Not specified")}</p><p>Suggested budget: ${escapeHtml(settings.gift_budget || "To be confirmed")}<br/>Exchange date: ${escapeHtml(settings.exchange_date || "To be confirmed")}</p><p>Please keep your assignment secret. Happy gifting!</p>`);
       const { error: updateError } = await db.from("assignments").update({ emailed_at: new Date().toISOString() }).eq("id", a.id).eq("event_id", eventId);
       if (updateError) throw updateError;
     } catch (error) {

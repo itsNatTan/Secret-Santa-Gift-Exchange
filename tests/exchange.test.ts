@@ -42,9 +42,9 @@ test("admin sessions are bound to one event, signed, and expire", () => {
   assert.notEqual(hashToken(token), token);
   assert.equal(normalizeCode(" abcd-1234 "), "ABCD1234");
 });
-test("participant edits filter unsafe wishlist links and bound input sizes", () => {
-  const details = participantDetails({ name: "  Alex  ", wishlist_links: ["https://example.com/gift", "javascript:alert(1)", "file:///etc/passwd"], likes: "x".repeat(2000) });
+test("participant edits trim names and bound input sizes", () => {
+  const details = participantDetails({ name: "  Alex  ", likes: "x".repeat(2000) });
   assert.equal(details.name, "Alex");
-  assert.deepEqual(details.wishlist_links, ["https://example.com/gift"]);
+  assert.deepEqual(Object.keys(details).sort(), ["name", "categories", "likes", "dislikes", "updated_at"].sort());
   assert.equal(details.likes.length, 1000);
 });

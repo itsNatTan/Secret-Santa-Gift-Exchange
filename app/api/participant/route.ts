@@ -4,7 +4,7 @@ import { participantDetails } from "@/lib/participant";
 export async function GET(req: Request) {
   const token = new URL(req.url).searchParams.get("token") || "";
   if (!token) return NextResponse.json({ error: "Missing edit token." }, { status: 400 });
-  const { data, error } = await database().from("participants").select("name,email,categories,wishlist_links,likes,dislikes,event_id").eq("edit_token_hash", hashToken(token)).maybeSingle();
+  const { data, error } = await database().from("participants").select("name,email,categories,likes,dislikes,event_id").eq("edit_token_hash", hashToken(token)).maybeSingle();
   if (error || !data) return NextResponse.json({ error: "Invalid edit link." }, { status: 404 });
   return NextResponse.json({ participant: data }, { headers: { "Cache-Control": "no-store" } });
 }
