@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
-import { makeSecretSanta } from "../lib/matching.ts";
+import { makeSecretSanta, parseForcedPairs } from "../lib/matching.ts";
 import { adminCookieValue, adminEventId, hashToken, newToken, normalizeCode } from "../lib/security.ts";
 import { participantDetails } from "../lib/participant.ts";
 import { siteUrl } from "../lib/site-url.ts";
@@ -41,6 +41,44 @@ test("admin sessions are bound to one event, signed, and expire", () => {
   assert.equal(token.length, 64);
   assert.notEqual(hashToken(token), token);
   assert.equal(normalizeCode(" abcd-1234 "), "ABCD1234");
+});
+
+test("draw preserves forced paths and cycles and assigns every participant once", () => {
+  for (const size of [3, 4, 6, 10, 100, 1000]) {
+    const ids = Array.from({ length: size }, (_, i) => String(i));
+    for (let trial = 0; trial < 20; trial++) {
+      const original = makeSecretSanta(ids);
+      const forced = original.filter(() => Math.random() < 0.6);
+      const pairs = makeSecretSanta(ids, forced), map = new Map(pairs.map(p => [p.giver_id, p.recipient_id]));
+      assert.equal(map.size, size);
+      assert.equal(new Set(map.values()).size, size);
+      forced.forEach(pair => assert.equal(map.get(pair.giver_id), pair.recipient_id));
+      for (const [giver, recipient] of map) {
+        assert.notEqual(giver, recipient);
+        assert.notEqual(map.get(recipient), giver);
+      }
+    }
+  }
+  const forced = [
+    { giver_id: "a", recipient_id: "b" }, { giver_id: "b", recipient_id: "c" }, { giver_id: "c", recipient_id: "a" }
+  ];
+  assert.deepEqual(makeSecretSanta(["a", "b", "c"], forced), forced);
+  assert.equal(makeSecretSanta(["a", "b", "c", "d", "e", "f"], forced).length, 6);
+  assert.throws(() => makeSecretSanta(["a", "b", "c", "d"], forced), /fewer than 3/);
+  assert.throws(() => makeSecretSanta(["a", "b", "c", "d", "e"], forced), /fewer than 3/);
+});
+
+test("invalid forced pairings fail with actionable errors", () => {
+  const pair = (giver_id: string, recipient_id: string) => ({ giver_id, recipient_id });
+  const ids = ["a", "b", "c", "d"];
+  assert.throws(() => makeSecretSanta(ids, [pair("a", "a")]), /themselves/);
+  assert.throws(() => makeSecretSanta(ids, [pair("a", "outside")]), /this event/);
+  assert.throws(() => makeSecretSanta(ids, [pair("a", "b"), pair("a", "c")]), /Each giver/);
+  assert.throws(() => makeSecretSanta(ids, [pair("a", "c"), pair("b", "c")]), /Each recipient/);
+  assert.throws(() => makeSecretSanta(ids, [pair("a", "b"), pair("b", "a")]), /Reciprocal/);
+  for (const value of [null, {}, [null], [{ giver_id: "a" }], [{ giver_id: 1, recipient_id: "b" }]]) {
+    assert.throws(() => parseForcedPairs(value), /Choose a giver/);
+  }
 });
 test("participant edits trim names and bound input sizes", () => {
   const details = participantDetails({ name: "  Alex  ", likes: "x".repeat(2000) });

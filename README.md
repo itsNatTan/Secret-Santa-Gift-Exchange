@@ -21,7 +21,7 @@ Never expose the Supabase service-role key in a `NEXT_PUBLIC_` variable.
 ## Database setup
 
 For an **existing deployment of the original single-event app**, back up the
-Supabase database and run **only**
+Supabase database and first run
 [`supabase/migrations/20261103_multi_event.sql`](supabase/migrations/20261103_multi_event.sql)
 once in Supabase's SQL editor. Run it before deploying the new application;
 avoid registrations during the migration/deployment window.
@@ -42,6 +42,18 @@ once instead. Do not run the fresh schema on the existing deployment, and do not
 run both scripts. All app tables have RLS enabled with no browser access policies;
 route handlers use the server-only service-role key. Draw and email-claim RPCs
 are restricted to `service_role`.
+
+For an existing multi-event deployment, run
+[`supabase/migrations/20261110_forced_pairs.sql`](supabase/migrations/20261110_forced_pairs.sql)
+once before deploying the forced-pairings feature. Original single-event databases
+must first run the multi-event migration above, then this migration. New databases
+using the current fresh schema already include this feature. The migration
+preserves existing participants and draws.
+
+Then run [`supabase/migrations/20261110_review_draw.sql`](supabase/migrations/20261110_review_draw.sql)
+once to enable draft review and confirmation. Existing generated draws remain
+confirmed and locked, preserving their assignments and email delivery status.
+New databases using the current fresh schema need neither of these migrations.
 
 ## Vercel and Gmail setup
 
@@ -84,11 +96,24 @@ Live Gmail delivery requires credentials and is not covered by the local tests.
 5. Set budget, date and registration deadline, inspect participant preferences,
    and close registration when ready. Deadline inputs use the organiser's browser
    timezone; public event pages show Singapore time.
-6. Generate the draw with at least three participants. The database commits it
-   atomically, closes registration, and prevents another draw. Self-assignments
-   and reciprocal pairs are prohibited.
-7. Emails are sent in batches of five to fit within Vercel request limits. Use
-   **Send pending emails** until all are sent. Retries use the saved assignments.
+6. Optionally add giver → recipient choices under **Forced pairings**, then click
+   **Save forced pairings**. These choices are stored for the event and remain
+   after refreshing or logging in again. Duplicate givers/recipients, self or
+   reciprocal pairs, and combinations that cannot produce a complete draw are
+   rejected. Click **Generate draft draw** with at least three participants.
+   Initial forced pairings are honoured and everyone else is assigned automatically.
+   This closes registration and saves a draft without sending assignment emails.
+7. Under **Review assignments**, change recipients as needed, including overriding
+   an initial forced choice. Each person must give once and receive once, with no
+   self or reciprocal pairings. When moving recipients, update all affected rows,
+   then click **Save draft changes**. Drafts persist after refreshing. Concurrent
+   edits or confirmations from an outdated review are rejected.
+8. Click **Confirm draw & send all emails** after reviewing the saved draft.
+   This permanently locks the assignments and starts sending. Keep the dashboard
+   open: it automatically sends successive batches of five within Vercel request
+   limits. If sending stops or you close the page, use **Send pending emails** to
+   continue. It stops automatically when a batch makes no progress, so failures
+   do not cause endless retries. Retries use the confirmed assignments.
    Claims prevent overlapping requests from sending the same batch. After a
    request interruption, wait two minutes for claims to expire. SMTP cannot
    guarantee exactly-once delivery: a timeout after acceptance, or interruption
@@ -96,6 +121,13 @@ Live Gmail delivery requires credentials and is not covered by the local tests.
 
 Registration is saved even if confirmation email fails. The success page always
 shows a private edit link to save; that link works until registration closes.
+If a participant loses their link, expand their entry on the admin dashboard and
+click **Generate new edit link & email**. This invalidates their previous link,
+automatically emails the replacement to their registered address, and shows a
+private link you can copy and share directly even if email delivery fails.
+Save it before leaving the dashboard; only its hash is stored in the database.
+Replacement links are available only while registration is open, before its
+deadline and before the draw. This feature uses the existing database schema.
 The organiser can view participant details, while the assigned giver receives
 the recipient's gift preferences by email.
 
