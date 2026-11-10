@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Exchange } from "@/lib/server";
 import { makeSecretSanta, type AssignmentPair } from "@/lib/matching";
+import RosterImport from "./roster-import";
 type Participant = { id: string; name: string; email: string; categories: string[]; likes: string; dislikes: string };
 type Dashboard = { settings: Exchange; participants: Participant[]; deliveries: { giver_id: string; recipient_id: string; emailed_at: string | null }[]; forcedPairs: AssignmentPair[]; drawConfirmed: boolean; drawRevision: number };
 export default function AdminPanel() {
@@ -101,6 +102,7 @@ export default function AdminPanel() {
       <button className="secondary" disabled={busy}>Save event settings</button>
     </form>
     <p className="notice">Registration: {data.settings.registration_open ? "Open" : "Closed"} · Draw: {data.drawConfirmed ? "Confirmed" : data.settings.assignments_generated ? "Draft — awaiting review" : "Not generated"}</p>
+    <RosterImport participants={data.participants} available={editsOpen && !pairingsDirty} busy={busy} onBusyChange={setBusy} onImported={load}/>
     <h2>Participants</h2>
     {data.participants.map(p => <details key={p.id} className="participant">
       <summary><strong>{p.name}</strong> · {p.email}{data.settings.assignments_generated && <span className="small"> · {data.deliveries.find(d => d.giver_id === p.id)?.emailed_at ? "Email sent" : data.drawConfirmed ? "Email pending" : "Not sent (draft)"}</span>}</summary>

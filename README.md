@@ -131,6 +131,29 @@ deadline and before the draw. This feature uses the existing database schema.
 The organiser can view participant details, while the assigned giver receives
 the recipient's gift preferences by email.
 
+### Import an expected participant list
+
+On the admin dashboard, paste the two **Name** and **Email** columns copied from
+Excel into **Import expected participants**. Headers are optional: without headers,
+use name then email; with headers, either column order is accepted. Quoted Excel
+cells and CSV lists are also supported, up to 1,000 rows per paste.
+
+The preview compares email addresses without case sensitivity and identifies
+missing people, existing registrations, duplicate rows and invalid entries.
+Correct invalid rows, then click **Import missing participants & email**. Only
+missing people are registered; existing names, preferences and edit links are
+preserved, and existing participants receive no additional email.
+
+Imported participants start with blank likes/dislikes and no categories. Each
+new participant receives a registration email with their private edit link so
+they can add preferences. Imports run in batches of five; keep the page open
+until completion. An email failure does not undo registration: the results show
+a private edit link to copy, and **Generate new edit link & email** can retry.
+After an interrupted request, reload the dashboard before retrying; already
+registered participants will be skipped. Import requires open registration,
+an unexpired deadline, and no generated draft or confirmed draw. No additional
+database migration is needed for importing participants.
+
 ## Verification
 
 ```sh
